@@ -109,13 +109,13 @@ resource "azurerm_cosmosdb_sql_container" "this" {
 #############################################################################
 ########### APP SERVICE PLAN
 #############################################################################
-#resource "azurerm_service_plan" "this" {
-#  name                = "asp-gaspain-2024"
-#  resource_group_name = azurerm_resource_group.this.name
-#  location            = azurerm_resource_group.this.location
-#  os_type             = "Linux"
-#  sku_name            = "B1"
-#}
+resource "azurerm_service_plan" "this" {
+  name                = "asp-gaspain-2024"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.this.location
+  os_type             = "Linux"
+  sku_name            = "B1"
+}
 
 #resource "azurerm_linux_web_app" "this" {
 #  name                = "web-gaspain-2024"
