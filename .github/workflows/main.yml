@@ -7,12 +7,6 @@ on:
     - '**/README.md'
     - '**/LICENSE'
     - 'visuals/**'
-  pull_request:
-    branches: [ main ]
-    paths-ignore:
-    - '**/README.md'
-    - '**/LICENSE'
-    - 'visuals/**'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
