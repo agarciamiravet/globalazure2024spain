@@ -11,87 +11,87 @@ on:
     # Allows you to run this workflow manually from the Actions tab
     workflow_dispatch:
   
-  name: terraform-deploy
+name: terraform-deploy
   
-  jobs:
-    Build:
-      runs-on: ubuntu-latest
-      defaults:
-          run:
-            working-directory: ./infra
-      env:
-        ARM_CLIENT_ID: ${{secrets.ARM_CLIENT_ID}}
-        ARM_CLIENT_SECRET: ${{secrets.ARM_CLIENT_SECRET}}
-        ARM_SUBSCRIPTION_ID: ${{secrets.ARM_SUBSCRIPTION_ID}}
-        ARM_TENANT_ID: ${{secrets.ARM_TENANT_ID}}
-        TF_VAR_sql_server_admin_user: ${{secrets.TF_VAR_SQL_SERVER_ADMIN_USER}}
-        TF_VAR_sql_server_password_user: ${{secrets.TF_VAR_SQL_SERVER_PASSWORD_USER}}
-      steps:
-        - uses: actions/checkout@v2
-  
-        - name: Setup Terraform
-          uses: hashicorp/setup-terraform@v1
-          with:
-           terraform_wrapper: false
-  
-        - name: Terraform Init
-          run: terraform init
-  
-        - name: Terraform Format
-          run: terraform fmt
-          
-        - name: Terraform Plan
-          run: terraform plan 
-          
-        - name: Preparation tests
-          run: |
-            terraform plan -out tfplan.tfplan
-            terraform show -json tfplan.tfplan > tfplan.json
-  
-        - name: OPA tests
-          id: opatests
-          uses: agarciamiravet/confest-alex-github-action@main
-          continue-on-error: true
-          with:
-            path: "infra/tfplan.json"
-            policy: "opa-policies"
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    defaults:
+        run:
+          working-directory: ./infra
+    env:
+      ARM_CLIENT_ID: ${{secrets.ARM_CLIENT_ID}}
+      ARM_CLIENT_SECRET: ${{secrets.ARM_CLIENT_SECRET}}
+      ARM_SUBSCRIPTION_ID: ${{secrets.ARM_SUBSCRIPTION_ID}}
+      ARM_TENANT_ID: ${{secrets.ARM_TENANT_ID}}
+      TF_VAR_sql_server_admin_user: ${{secrets.TF_VAR_SQL_SERVER_ADMIN_USER}}
+      TF_VAR_sql_server_password_user: ${{secrets.TF_VAR_SQL_SERVER_PASSWORD_USER}}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+         terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format
+        run: terraform fmt
         
-        #- name: Tests break build
-        #  if: steps.opatests.outcome != 'success'
-        #  run: exit 1
+      - name: Terraform Plan
+        run: terraform plan 
         
-        - name: Create artifact
-          uses: actions/upload-artifact@v2
-          with:
-            name: my-artifact
-            path: ${{ github.workspace }}/infra/tfplan.tfplan
-  
-        
-    Deploy:
-      needs: Build
-      environment: production
-      runs-on: 'ubuntu-latest'
-      defaults:
-          run:
-            working-directory: ./infra
-      env:
-        ARM_CLIENT_ID: ${{secrets.ARM_CLIENT_ID}}
-        ARM_CLIENT_SECRET: ${{secrets.ARM_CLIENT_SECRET}}
-        ARM_SUBSCRIPTION_ID: ${{secrets.ARM_SUBSCRIPTION_ID}}
-        ARM_TENANT_ID: ${{secrets.ARM_TENANT_ID}}
-      steps:
-        - uses: actions/checkout@v2
-        
-        - name: Setup Terraform
-          uses: hashicorp/setup-terraform@v1
-        
-        - uses: actions/download-artifact@v2
-          with:
-            name: my-artifact
-            path: ./infra
-  
-        - name: Terraform init
-          run: terraform init
-        
-        - name: Terraform apply plan
-          run: terraform apply --auto-approve tfplan.tfplan
+      - name: Preparation tests
+        run: |
+          terraform plan -out tfplan.tfplan
+          terraform show -json tfplan.tfplan > tfplan.json
+
+      - name: OPA tests
+        id: opatests
+        uses: agarciamiravet/confest-alex-github-action@main
+        continue-on-error: true
+        with:
+          path: "infra/tfplan.json"
+          policy: "opa-policies"
+      
+      #- name: Tests break build
+      #  if: steps.opatests.outcome != 'success'
+      #  run: exit 1
+      
+      - name: Create artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: my-artifact
+          path: ${{ github.workspace }}/infra/tfplan.tfplan
+
+      
+  Deploy:
+    needs: Build
+    environment: production
+    runs-on: 'ubuntu-latest'
+    defaults:
+        run:
+          working-directory: ./infra
+    env:
+      ARM_CLIENT_ID: ${{secrets.ARM_CLIENT_ID}}
+      ARM_CLIENT_SECRET: ${{secrets.ARM_CLIENT_SECRET}}
+      ARM_SUBSCRIPTION_ID: ${{secrets.ARM_SUBSCRIPTION_ID}}
+      ARM_TENANT_ID: ${{secrets.ARM_TENANT_ID}}
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+      
+      - uses: actions/download-artifact@v2
+        with:
+          name: my-artifact
+          path: ./infra
+
+      - name: Terraform init
+        run: terraform init
+      
+      - name: Terraform apply plan
+        run: terraform apply --auto-approve tfplan.tfplan
