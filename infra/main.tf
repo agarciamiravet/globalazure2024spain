@@ -11,8 +11,12 @@ resource "azurerm_storage_account" "this" {
   account_replication_type = "LRS"
   blob_properties {
     container_delete_retention_policy {
-      days = 7
+      days = 32
     }
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -44,7 +48,7 @@ resource "azurerm_key_vault" "this" {
 ##### COSMOSDB
 #####################################################################################
 resource "azurerm_cosmosdb_account" "this" {
-  name                = "cosmos-gaspain2024"
+  name                = "cosmos-gaspainmad2024"
   location            = azurerm_resource_group.this.location
   resource_group_name = azurerm_resource_group.this.name
   enable_free_tier    = "true"
@@ -68,6 +72,12 @@ resource "azurerm_cosmosdb_account" "this" {
     "hidden-cosmos-mmspecial" = ""
   }
 
+  lifecycle {
+    ignore_changes = [
+      restore
+    ]
+  }
+
 }
 
 resource "azurerm_cosmosdb_sql_database" "this" {
@@ -77,33 +87,14 @@ resource "azurerm_cosmosdb_sql_database" "this" {
 }
 
 resource "azurerm_cosmosdb_sql_container" "this" {
-  name                  = "cosmosdb-container"
+  name                  = "testimonios"
   resource_group_name   = azurerm_cosmosdb_account.this.resource_group_name
   account_name          = azurerm_cosmosdb_account.this.name
   database_name         = azurerm_cosmosdb_sql_database.this.name
-  partition_key_path    = "/definition/id"
+  partition_key_path    = "/id"
   partition_key_version = 1
   throughput            = 400
 
-  indexing_policy {
-    indexing_mode = "consistent"
-
-    included_path {
-      path = "/*"
-    }
-
-    included_path {
-      path = "/included/?"
-    }
-
-    excluded_path {
-      path = "/excluded/?"
-    }
-  }
-
-  unique_key {
-    paths = ["/definition/idlong", "/definition/idshort"]
-  }
 }
 
 #############################################################################
@@ -117,13 +108,73 @@ resource "azurerm_service_plan" "this" {
   sku_name            = "B1"
 }
 
-#resource "azurerm_linux_web_app" "this" {
-#  name                = "web-gaspain-2024"
-#  resource_group_name = azurerm_resource_group.this.name
-#  location            = azurerm_service_plan.this.location
-#  service_plan_id     = azurerm_service_plan.this.id
-#
-#  site_config {
-#    always_on = "false"
-#   }
-# }
+resource "azurerm_linux_web_app" "this" {
+  name                = "vidasinbackups"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_service_plan.this.location
+  service_plan_id     = azurerm_service_plan.this.id
+
+  https_only = true
+
+  site_config {
+    always_on = "true"
+   }
+
+     lifecycle {
+    ignore_changes = [
+       site_config[0].app_command_line
+    ]
+  }
+
+ }
+
+ resource "azurerm_linux_web_app" "this-api" {
+  name                = "vidasinbackups-api"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_service_plan.this.location
+  service_plan_id     = azurerm_service_plan.this.id
+
+  https_only = true
+
+  site_config {
+    always_on = "true"
+
+    cors {
+      allowed_origins = ["https://vidasinbackups.azurewebsites.net"]
+    }
+   }
+
+
+     lifecycle {
+    ignore_changes = [
+       site_config[0].app_command_line
+    ]
+  }
+
+ }
+
+###############################################################
+######### AZURE SQL SERVER
+###############################################################
+resource "azurerm_sql_server" "this" {
+  name                         = "sql-gaspain-2024"
+  resource_group_name          = azurerm_resource_group.this.name
+  location                     = azurerm_resource_group.this.location
+  version                      = "12.0"
+  administrator_login          = var.sql_server_admin_user
+  administrator_login_password = var.sql_server_password_user
+}
+
+resource "azurerm_sql_database" "this" {
+  name                = "sqldb-gaspain-2024"
+  resource_group_name = azurerm_resource_group.this.name
+  location            = azurerm_resource_group.this.location
+  server_name         = azurerm_sql_server.this.name
+
+  requested_service_objective_name = "Basic"
+
+  # prevent the possibility of accidental data loss
+  lifecycle {
+    prevent_destroy = true
+  }
+}
