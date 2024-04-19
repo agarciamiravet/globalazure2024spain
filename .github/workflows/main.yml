@@ -63,5 +63,5 @@ jobs:
       - name: Create artifact
         uses: actions/upload-artifact@v2
         with:
-          name: my-artifact
+          name: terraform-artifact
           path: ${{ github.workspace }}/infra/tfplan.tfplan
