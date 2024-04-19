@@ -56,42 +56,12 @@ jobs:
           path: "infra/tfplan.json"
           policy: "opa-policies"
       
-      #- name: Tests break build
-      #  if: steps.opatests.outcome != 'success'
-      #  run: exit 1
+      - name: Tests break build
+        if: steps.opatests.outcome != 'success'
+        run: exit 1
       
       - name: Create artifact
         uses: actions/upload-artifact@v2
         with:
-          name: my-artifact
+          name: terraform-artifact
           path: ${{ github.workspace }}/infra/tfplan.tfplan
-
-      
-  Deploy:
-    needs: Build
-    environment: production
-    runs-on: 'ubuntu-latest'
-    defaults:
-        run:
-          working-directory: ./infra
-    env:
-      ARM_CLIENT_ID: ${{secrets.ARM_CLIENT_ID}}
-      ARM_CLIENT_SECRET: ${{secrets.ARM_CLIENT_SECRET}}
-      ARM_SUBSCRIPTION_ID: ${{secrets.ARM_SUBSCRIPTION_ID}}
-      ARM_TENANT_ID: ${{secrets.ARM_TENANT_ID}}
-    steps:
-      - uses: actions/checkout@v2
-      
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-      
-      - uses: actions/download-artifact@v2
-        with:
-          name: my-artifact
-          path: ./infra
-
-      - name: Terraform init
-        run: terraform init
-      
-      - name: Terraform apply plan
-        run: terraform apply --auto-approve tfplan.tfplan
