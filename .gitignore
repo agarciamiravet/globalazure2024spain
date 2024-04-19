@@ -36,3 +36,7 @@ terraform.rc
 #Ignore powershell
 
 *.ps1
+
+#ignore src folder
+
+/src
