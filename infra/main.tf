@@ -14,10 +14,6 @@ resource "azurerm_storage_account" "this" {
       days = 32
     }
   }
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "azurerm_storage_container" "datos" {
